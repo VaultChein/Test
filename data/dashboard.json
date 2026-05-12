@@ -1,0 +1,50 @@
+{
+  "totalVolume": "+$1,254,322",
+  "activeUsers": "12,842",
+  "assetsProtected": "$48B",
+  "walletBalance": "$246,420",
+  "walletReserved": "$18,200",
+  "transactions": [
+    {
+      "name": "Ava Johnson",
+      "email": "ava@mail.com",
+      "amount": "$2,400.00",
+      "date": "May 2, 2026",
+      "method": "Card • Visa",
+      "status": "Succeeded"
+    },
+    {
+      "name": "Liam Wong",
+      "email": "liam@mail.com",
+      "amount": "$120.00",
+      "date": "May 1, 2026",
+      "method": "Bank transfer",
+      "status": "Pending"
+    },
+    {
+      "name": "Noah Patel",
+      "email": "noah@mail.com",
+      "amount": "-$85.00",
+      "date": "Apr 30, 2026",
+      "method": "Refund",
+      "status": "Failed"
+    }
+  ],
+  "clients": [
+    {
+      "name": "Acme Co.",
+      "email": "acme@company.com",
+      "value": "$82,400"
+    },
+    {
+      "name": "BlueTech",
+      "email": "hello@bluetech.io",
+      "value": "$45,220"
+    },
+    {
+      "name": "ZenMarket",
+      "email": "info@zenmarket.com",
+      "value": "$31,100"
+    }
+  ]
+}

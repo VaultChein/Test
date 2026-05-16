@@ -10,9 +10,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin() {
-    const err = login(email, password);
+  async function handleLogin() {
+    setError('');
+    setLoading(true);
+    const err = await login(email, password);
+    setLoading(false);
     if (err) { setError(err); return; }
     router.push('/admin');
   }
@@ -36,8 +40,8 @@ export default function LoginPage() {
           className="w-full p-3 mb-4 bg-black border border-white/10 rounded text-white outline-none"
           onKeyDown={e => e.key === 'Enter' && handleLogin()}
         />
-        <button onClick={handleLogin} className="w-full bg-emerald-500 py-3 rounded font-medium">
-          Login
+        <button onClick={handleLogin} disabled={loading} className="w-full bg-emerald-500 py-3 rounded font-medium disabled:opacity-50">
+          {loading ? 'Logging in…' : 'Login'}
         </button>
       </div>
     </div>

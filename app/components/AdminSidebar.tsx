@@ -1,23 +1,29 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/app/context/AuthContext';
 
 const links = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/transactions', label: 'Transactions' },
-  { href: '/admin/clients', label: 'Clients' },
+  { href: '/admin/clients', label: 'Clients', adminOnly: true },
   { href: '/admin/reports', label: 'Reports' },
   { href: '/admin/integrations', label: 'Integrations' },
   { href: '/admin/security', label: 'Security' },
-  { href: '/admin/manage', label: '⚙ Manage' },
+  { href: '/admin/manage', label: '⚙ Manage', adminOnly: true },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  const visibleLinks = links.filter(l => !l.adminOnly || isAdmin);
+
   return (
     <aside className="bg-white/[0.03] rounded-2xl p-4 h-[72vh] sticky top-24 border border-white/5">
       <nav className="space-y-2 text-sm">
-        {links.map(({ href, label }) => (
+        {visibleLinks.map(({ href, label }) => (
           <Link
             key={href}
             href={href}

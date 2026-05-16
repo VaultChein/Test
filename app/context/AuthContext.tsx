@@ -1,38 +1,67 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
-const CREDS = [{ email: 'vault@vault.com', password: 'pass123' }];
+export type UserRole = 'admin' | 'client';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  name?: string;
+}
 
 interface AuthContextType {
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => string | null;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const router = useRouter();
 
-  function login(email: string, password: string): string | null {
+  // Restore session from sessionStorage on mount
+  useEffect(() => {
+    const stored = sessionStorage.getItem('vc_user');
+    if (stored) {
+      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  async function login(email: string, password: string): Promise<string | null> {
     if (!email || !password) return 'Fill all fields';
-    if (!email.includes('@') || !email.includes('.')) return 'Invalid email';
+    if (!email.includes('@')) return 'Invalid email';
     if (password.length < 6) return 'Password too short';
-    const match = CREDS.find(c => c.email === email && c.password === password);
-    console.log(match)
-    if (!match) return 'Invalid email or password';
-    setIsAuthenticated(true);
+
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return data.error || 'Invalid email or password';
+
+    const authUser: AuthUser = { id: data.id, email: data.email, role: data.role, name: data.name };
+    setUser(authUser);
+    sessionStorage.setItem('vc_user', JSON.stringify(authUser));
     return null;
   }
 
   function logout() {
-    setIsAuthenticated(false);
+    setUser(null);
+    sessionStorage.removeItem('vc_user');
     router.push('/');
   }
 
-  return <AuthContext.Provider value={{ isAuthenticated, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
 
 export interface Transaction {
   name: string;
@@ -27,11 +28,11 @@ export interface DashboardState {
 }
 
 const DEFAULT: DashboardState = {
-  totalVolume: '+$1,254,320',
-  activeUsers: '12,842',
-  assetsProtected: '$48B',
-  walletBalance: '$246,420',
-  walletReserved: '$18,200',
+  totalVolume: '$0',
+  activeUsers: '0',
+  assetsProtected: '$0',
+  walletBalance: '$0',
+  walletReserved: '$0',
   transactions: [],
   clients: [],
 };
@@ -45,28 +46,32 @@ interface DashboardContextType {
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
-async function post(body: Partial<DashboardState>): Promise<DashboardState> {
-  const res = await fetch('/api/dashboard', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-}
-
 export function DashboardProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [state, setState] = useState<DashboardState>(DEFAULT);
 
-  // Load from server on mount
+  // Derive the key: admin uses 'admin', clients use their id
+  const clientId = user ? (user.role === 'admin' ? 'admin' : user.id) : null;
+
   useEffect(() => {
-    fetch('/api/dashboard')
+    if (!clientId) return;
+    fetch(`/api/dashboard?clientId=${clientId}`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then(setState)
       .catch(e => console.error('Dashboard fetch failed:', e.message));
-  }, []);
+  }, [clientId]);
+
+  async function post(body: Partial<DashboardState>): Promise<DashboardState> {
+    const res = await fetch(`/api/dashboard?clientId=${clientId ?? 'admin'}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
 
   async function update(patch: Partial<DashboardState>) {
     const next = await post(patch);

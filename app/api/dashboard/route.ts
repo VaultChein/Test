@@ -22,47 +22,91 @@ const DEFAULT = {
   ],
 };
 
-function read() {
-  if (!existsSync(FILE)) {
-    writeFileSync(FILE, JSON.stringify(DEFAULT, null, 2));
-    return DEFAULT;
+const CLIENT_DEFAULT = {
+  totalVolume: '$0',
+  activeUsers: '0',
+  assetsProtected: '$0',
+  walletBalance: '$0',
+  walletReserved: '$0',
+  transactions: [],
+  clients: [],
+};
+
+function readFile() {
+  try {
+    if (!existsSync(FILE)) {
+      writeFileSync(FILE, JSON.stringify({ admin: DEFAULT }, null, 2));
+      return { admin: DEFAULT };
+    }
+    const raw = JSON.parse(readFileSync(FILE, 'utf-8'));
+    // Migrate old flat format to keyed format
+    if (!raw.admin && (raw.totalVolume || raw.transactions)) {
+      const migrated = { admin: raw };
+      writeFileSync(FILE, JSON.stringify(migrated, null, 2));
+      return migrated;
+    }
+    return raw;
+  } catch {
+    const fresh = { admin: DEFAULT };
+    writeFileSync(FILE, JSON.stringify(fresh, null, 2));
+    return fresh;
   }
-  return JSON.parse(readFileSync(FILE, 'utf-8'));
 }
 
-export async function GET() {
-  // Use MongoDB in production (set MONGODB_URI env var on your host)
+function writeFile(data: Record<string, any>) {
+  writeFileSync(FILE, JSON.stringify(data, null, 2));
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const clientId = searchParams.get('clientId') ?? 'admin';
+
   if (process.env.MONGODB_URI) {
-    const { default: clientPromise } = await import('@/lib/mongodb');
-    const client = await clientPromise;
-    const col = client.db('vaultchein').collection('dashboard');
-    let doc = await col.findOne({ _id: 'state' as any }) as any;
-    if (!doc) {
-      await col.insertOne({ _id: 'state' as any, ...DEFAULT });
-      doc = { _id: 'state', ...DEFAULT };
+    try {
+      const { default: clientPromise } = await import('@/lib/mongodb');
+      const client = await clientPromise;
+      const col = client.db('vaultchein').collection('dashboard');
+      let doc = await col.findOne({ _id: clientId as any }) as any;
+      if (!doc) {
+        const seed = clientId === 'admin' ? DEFAULT : CLIENT_DEFAULT;
+        await col.insertOne({ _id: clientId as any, ...seed });
+        doc = { _id: clientId, ...seed };
+      }
+      const { _id, ...data } = doc;
+      return NextResponse.json(data);
+    } catch (e) {
+      console.error('Dashboard GET error:', e);
     }
-    const { _id, ...data } = doc;
-    return NextResponse.json(data);
   }
-  return NextResponse.json(read());
+
+  const all = readFile();
+  const data = all[clientId] ?? (clientId === 'admin' ? DEFAULT : CLIENT_DEFAULT);
+  return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const clientId = searchParams.get('clientId') ?? 'admin';
   const body = await req.json();
 
   if (process.env.MONGODB_URI) {
-    const { default: clientPromise } = await import('@/lib/mongodb');
-    const client = await clientPromise;
-    const col = client.db('vaultchein').collection('dashboard');
-    const { _id, ...update } = body;
-    await col.updateOne({ _id: 'state' as any }, { $set: update }, { upsert: true });
-    const doc = await col.findOne({ _id: 'state' as any }) as any;
-    const { _id: __, ...data } = doc;
-    return NextResponse.json(data);
+    try {
+      const { default: clientPromise } = await import('@/lib/mongodb');
+      const client = await clientPromise;
+      const col = client.db('vaultchein').collection('dashboard');
+      const { _id, ...update } = body;
+      await col.updateOne({ _id: clientId as any }, { $set: update }, { upsert: true });
+      const doc = await col.findOne({ _id: clientId as any }) as any;
+      const { _id: __, ...data } = doc;
+      return NextResponse.json(data);
+    } catch (e) {
+      console.error('Dashboard POST error:', e);
+    }
   }
 
-  const current = read();
-  const next = { ...current, ...body };
-  writeFileSync(FILE, JSON.stringify(next, null, 2));
-  return NextResponse.json(next);
+  const all = readFile();
+  const current = all[clientId] ?? (clientId === 'admin' ? DEFAULT : CLIENT_DEFAULT);
+  all[clientId] = { ...current, ...body };
+  writeFile(all);
+  return NextResponse.json(all[clientId]);
 }

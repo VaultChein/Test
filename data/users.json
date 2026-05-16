@@ -1,0 +1,16 @@
+[
+  {
+    "id": "admin",
+    "email": "vault@vault.com",
+    "password": "pass123",
+    "name": "Admin",
+    "role": "admin"
+  },
+  {
+    "id": "1778965279926",
+    "email": "jane@example.com",
+    "password": "hello123",
+    "name": "jane Doe",
+    "role": "client"
+  }
+]

@@ -1,28 +1,30 @@
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI!;
 const options = {
   serverSelectionTimeoutMS: 5000,
   connectTimeoutMS: 10000,
 };
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
+console.log('MongoDB URI:', process.env.MONGODB_URI);
 declare global {
   // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+function getClientPromise(): Promise<MongoClient> {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error('MONGODB_URI is not defined');
+
+  if (process.env.NODE_ENV === 'development') {
+    if (!global._mongoClientPromise) {
+      global._mongoClientPromise = new MongoClient(uri, options).connect();
+    }
+    return global._mongoClientPromise;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+
+  return new MongoClient(uri, options).connect();
 }
 
-export default clientPromise;
+export default {
+  then: (...args: Parameters<Promise<MongoClient>['then']>) => getClientPromise().then(...args),
+  catch: (...args: Parameters<Promise<MongoClient>['catch']>) => getClientPromise().catch(...args),
+} as Promise<MongoClient>;

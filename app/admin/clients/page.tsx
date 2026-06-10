@@ -16,12 +16,52 @@ export default function ClientsPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Edit modal state
+  const [editClient, setEditClient] = useState<ClientUser | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
   useEffect(() => {
     fetch('/api/clients')
       .then(r => r.json())
       .then(setClients)
       .catch(() => {});
   }, []);
+
+  function openEdit(c: ClientUser) {
+    setEditClient(c);
+    setEditName(c.name);
+    setEditEmail(c.email);
+    setEditPassword('');
+    setEditError('');
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editClient) return;
+    setEditError('');
+    if (editPassword && editPassword.length < 6) { setEditError('Password must be at least 6 characters'); return; }
+    setEditLoading(true);
+    const body: Record<string, string> = {};
+    if (editName !== editClient.name) body.name = editName;
+    if (editEmail !== editClient.email) body.email = editEmail;
+    if (editPassword) body.password = editPassword;
+    const res = await fetch(`/api/clients/${editClient.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    setEditLoading(false);
+    if (!res.ok) { setEditError(data.error || 'Failed to update client'); return; }
+    setClients(prev => prev.map(c => c.id === editClient.id ? { ...c, name: data.name, email: data.email } : c));
+    setEditClient(null);
+    setSuccess(`Client updated successfully`);
+    setTimeout(() => setSuccess(''), 3000);
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -88,21 +128,61 @@ export default function ClientsPage() {
                   <div className="font-medium">{c.name || '—'}</div>
                   <div className="text-xs text-white/50">{c.email}</div>
                 </div>
-                <button
-                  onClick={async () => {
-                    if (!confirm(`Delete ${c.email} and all their data?`)) return;
-                    await fetch(`/api/clients/${c.id}`, { method: 'DELETE' });
-                    setClients(prev => prev.filter(x => x.id !== c.id));
-                  }}
-                  className="text-xs text-red-400 hover:text-red-300 border border-red-400/30 px-3 py-1 rounded-full"
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openEdit(c)}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete ${c.email} and all their data?`)) return;
+                      await fetch(`/api/clients/${c.id}`, { method: 'DELETE' });
+                      setClients(prev => prev.filter(x => x.id !== c.id));
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 border border-red-400/30 px-3 py-1 rounded-full"
+                  >
+                    Delete
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {/* Edit modal */}
+      {editClient && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#0f1117] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h2 className="font-semibold text-lg">Edit Client</h2>
+            {editError && <p className="text-red-400 text-sm">{editError}</p>}
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div>
+                <label className={labelCls}>Name</label>
+                <input className={inputCls} value={editName} onChange={e => setEditName(e.target.value)} placeholder="Jane Doe" />
+              </div>
+              <div>
+                <label className={labelCls}>Email</label>
+                <input className={inputCls} value={editEmail} onChange={e => setEditEmail(e.target.value)} type="email" />
+              </div>
+              <div>
+                <label className={labelCls}>New Password <span className="text-white/30">(leave blank to keep current)</span></label>
+                <input className={inputCls} value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="Min 6 characters" type="password" />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={editLoading} className="bg-emerald-500 px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50">
+                  {editLoading ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setEditClient(null)} className="px-5 py-2 rounded-full text-sm border border-white/10 text-white/60 hover:text-white">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

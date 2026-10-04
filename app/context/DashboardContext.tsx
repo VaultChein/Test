@@ -17,6 +17,28 @@ export interface Client {
   value: string;
 }
 
+export interface DashboardLabels {
+  totalVolume: string;
+  activeUsers: string;
+  assetsProtected: string;
+  walletBalance: string;
+  securityScore: string;
+  quickActions: string;
+  topMerchants: string;
+  revenue: string;
+}
+
+export const DEFAULT_LABELS: DashboardLabels = {
+  totalVolume: 'Total Volume (30d)',
+  activeUsers: 'Active Users',
+  assetsProtected: 'Assets Protected',
+  walletBalance: 'Wallet Balance',
+  securityScore: 'Security Score',
+  quickActions: 'Quick Actions',
+  topMerchants: 'Top Merchants',
+  revenue: 'Revenue (30d)',
+};
+
 export interface DashboardState {
   totalVolume: string;
   activeUsers: string;
@@ -25,6 +47,7 @@ export interface DashboardState {
   walletReserved: string;
   transactions: Transaction[];
   clients: Client[];
+  labels: DashboardLabels;
 }
 
 const DEFAULT: DashboardState = {
@@ -35,6 +58,7 @@ const DEFAULT: DashboardState = {
   walletReserved: '$0',
   transactions: [],
   clients: [],
+  labels: DEFAULT_LABELS,
 };
 
 interface DashboardContextType {
@@ -50,7 +74,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [state, setState] = useState<DashboardState>(DEFAULT);
 
-  // Derive the key: admin uses 'admin', clients use their id
   const clientId = user ? (user.role === 'admin' ? 'admin' : user.id) : null;
 
   useEffect(() => {
@@ -60,7 +83,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(setState)
+      .then(data => setState({ ...DEFAULT, ...data, labels: { ...DEFAULT_LABELS, ...data.labels } }))
       .catch(e => console.error('Dashboard fetch failed:', e.message));
   }, [clientId]);
 
@@ -70,7 +93,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return res.json();
+    const data = await res.json();
+    return { ...DEFAULT, ...data, labels: { ...DEFAULT_LABELS, ...data.labels } };
   }
 
   async function update(patch: Partial<DashboardState>) {

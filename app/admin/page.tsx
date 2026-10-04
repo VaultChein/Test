@@ -9,15 +9,16 @@ const statusClass: Record<string, string> = {
 
 export default function AdminPage() {
   const { state } = useDashboard();
+  const L = state.labels;
 
   return (
     <section className="space-y-6">
       {/* Overview cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Total Volume (30d)', value: state.totalVolume, sub: '+8.6% vs last week' },
-          { label: 'Active Users', value: state.activeUsers, sub: 'Monthly active' },
-          { label: 'Assets Protected', value: state.assetsProtected, sub: 'Bank-level encryption' },
+          { label: L.totalVolume,     value: state.totalVolume,     sub: '+8.6% vs last week' },
+          { label: L.activeUsers,     value: state.activeUsers,     sub: 'Monthly active' },
+          { label: L.assetsProtected, value: state.assetsProtected, sub: 'Bank-level encryption' },
         ].map(({ label, value, sub }) => (
           <div key={label} className="bg-white/5 border border-white/[0.08] rounded-2xl p-5">
             <div className="text-sm text-white/60">{label}</div>
@@ -76,18 +77,18 @@ export default function AdminPage() {
 
         <aside className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-4">
           <div>
-            <div className="text-sm text-white/60">Wallet balance</div>
+            <div className="text-sm text-white/60">{L.walletBalance}</div>
             <div className="text-2xl font-bold mt-1">{state.walletBalance}</div>
             <div className="text-xs text-white/50 mt-1">Reserved: {state.walletReserved}</div>
           </div>
           <div>
-            <div className="text-sm text-white/60 mb-2">Security Score</div>
+            <div className="text-sm text-white/60 mb-2">{L.securityScore}</div>
             <div className="w-full bg-white/[0.06] h-3 rounded-full overflow-hidden">
               <div className="h-3 bg-emerald-400" style={{ width: '99%' }} />
             </div>
           </div>
           <div className="mt-auto">
-            <div className="text-sm text-white/60 mb-3">Quick actions</div>
+            <div className="text-sm text-white/60 mb-3">{L.quickActions}</div>
             <div className="flex gap-2">
               <button className="bg-emerald-500 px-3 py-2 rounded-full text-sm flex-1">Send payout</button>
               <button className="border border-white/10 px-3 py-2 rounded-full text-sm">Refund</button>
@@ -99,11 +100,11 @@ export default function AdminPage() {
       {/* Charts row */}
       <div className="grid md:grid-cols-3 gap-4">
         <div className="md:col-span-2 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
-          <h4 className="font-semibold">Revenue (30d)</h4>
+          <h4 className="font-semibold">{L.revenue}</h4>
           <div className="h-48 flex items-center justify-center text-white/50">[Chart placeholder — integrate Chart.js]</div>
         </div>
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
-          <h4 className="font-semibold">Top merchants</h4>
+          <h4 className="font-semibold">{L.topMerchants}</h4>
           <ul className="mt-3 text-sm text-white/70 space-y-3">
             {state.clients.slice(0, 3).map(c => (
               <li key={c.name} className="flex justify-between"><span>{c.name}</span><strong>{c.value}</strong></li>

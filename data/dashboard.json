@@ -47,7 +47,17 @@
         "email": "info@zenmarket.com",
         "value": "$31,100"
       }
-    ]
+    ],
+    "labels": {
+      "totalVolume": "Total Volume (30d)",
+      "activeUsers": "Active Users",
+      "assetsProtected": "Assets Protected",
+      "walletBalance": "Wallet Balance",
+      "securityScore": "Security Score",
+      "quickActions": "Quick Actions",
+      "topMerchants": "Top Merchants",
+      "revenue": "Revenue (30d)"
+    }
   },
   "1778964806485": {
     "totalVolume": "$3000",

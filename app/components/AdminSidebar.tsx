@@ -11,6 +11,7 @@ const links = [
   { href: '/admin/integrations', label: 'Integrations' },
   { href: '/admin/security', label: 'Security' },
   { href: '/admin/manage', label: '⚙ Manage', adminOnly: true },
+  { href: '/admin/manage/labels', label: '🏷 Labels', adminOnly: true },
 ];
 
 export default function AdminSidebar() {

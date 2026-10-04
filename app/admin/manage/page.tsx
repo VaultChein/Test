@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Transaction, Client, DashboardState } from '@/app/context/DashboardContext';
+import { Transaction, Client, DashboardState, DEFAULT_LABELS } from '@/app/context/DashboardContext';
 
 const EMPTY_STATE: DashboardState = {
   totalVolume: '', activeUsers: '', assetsProtected: '',
   walletBalance: '', walletReserved: '', transactions: [], clients: [],
+  labels: DEFAULT_LABELS,
 };
 
 interface ClientUser { id: string; email: string; name: string; }
@@ -36,6 +37,7 @@ export default function ManagePage() {
           assetsProtected: data.assetsProtected,
           walletBalance: data.walletBalance,
           walletReserved: data.walletReserved,
+          labels: { ...DEFAULT_LABELS, ...data.labels },
         });
         setTransactions(data.transactions ?? []);
         setClientList(data.clients ?? []);
